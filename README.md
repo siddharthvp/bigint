@@ -1,2 +1,4 @@
 # bigint
-C++ Library for large computations on large numbers
+C++ Library for representing large numbers and computing on them
+
+Issues: factorial function gives wrong answers for large numbers.
