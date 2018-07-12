@@ -1,5 +1,6 @@
 #include<bits/stdc++.h>
 using namespace std;
+
 #include "bigint.h"
 
 bigint bigint::add_mag(const bigint& a, const bigint& b)
@@ -42,6 +43,7 @@ bigint bigint::add_mag(const bigint& a, const bigint& b)
     res.sign = true;
     return res;
 }
+
 bigint bigint::subtract_mag(const bigint& a, const bigint& b) //assumes: |a| > |b|
 {
     try { if(a.v.empty() || b.v.empty()) throw invalid_argument("operation on uninitialised bigints");
@@ -85,6 +87,7 @@ bigint bigint::subtract_mag(const bigint& a, const bigint& b) //assumes: |a| > |
     }
     return res;
 }
+
 int bigint::compare_mag(const bigint& a, const bigint& b)
 {
     try {if(a.v.empty() || b.v.empty()) throw invalid_argument("comparison on uninitialised bigints");
@@ -99,7 +102,11 @@ int bigint::compare_mag(const bigint& a, const bigint& b)
             return 0; ///equality case
     }
 }
-bigint::bigint() { sign=true; }
+
+bigint::bigint()
+{
+    sign=true;
+}
 bigint::bigint(char *s)
 {
     if(s[0]=='-')
@@ -159,20 +166,16 @@ bigint::bigint(int n)
         n /= 10;
     }
 }
+
 bigint bigint::negate()
 {
     if(sign == true) sign = false;
     else sign = true;
     return *this;
 }
-bigint bigint::abs()
-{
-    sign = true;
-    return *this;
-}
 long long bigint::toInt()
 {
-    try { if(v.size()>18) throw range_error("too large for long long int");
+    try { if(compare_mag(*this,LLONG_MAX)==1) throw range_error("out of bounds of long long int");
     } catch (range_error& e) { cerr<<e.what()<<endl; }
     long long n=0;
     for (int i : v)
@@ -184,6 +187,7 @@ long long bigint::toInt()
         n=-n;
     return n;
 }
+
 bool bigint::operator > (const bigint& that)
 {
     if(sign && !that.sign) return true;
@@ -250,12 +254,6 @@ bool bigint::operator != (const bigint& that)
     else
         return true;
 }
-//    ostream& bigint::operator << (ostream& outputStream)
-//    {
-//        for (int i : v)
-//            outputStream<<i;
-//        return outputStream;
-//    }
 
 bigint bigint::operator + (const bigint& that)
 {
@@ -277,6 +275,7 @@ bigint bigint::operator + (const bigint& that)
     }
     return add_mag(*this,that).negate();
 }
+
 bigint bigint::operator - (bigint const& that)
 {
     if(sign && that.sign)
@@ -299,32 +298,11 @@ bigint bigint::operator - (bigint const& that)
     }
     return add_mag(*this,that);
 }
-bigint bigint::operator -- ()   //prefix
-{
-    *this = *this-1;
-    return *this;
-}
-bigint bigint::operator ++ ()  //prefix
-{
-    *this = *this+1;
-    return *this;
-}
-bigint bigint::operator ++ (int)  //postfix
-{
-    bigint x = *this;
-    *this = *this + 1;
-    return x;
-}
-bigint bigint::operator -- (int)  //postfix
-{
-    bigint x = *this;
-    *this = *this - 1;
-    return x;
-}
-bigint bigint::operator * (bigint that)
+
+bigint bigint::operator * (const bigint& that)
 {
     bigint result = 0;
-    if(*this == (bigint)0 || that == (bigint)0)
+    if(*this == (bigint)0 || (bigint)0 == that)
         return result;
     vector <bigint> res(that.v.size());
     int carry=0;
@@ -337,13 +315,13 @@ bigint bigint::operator * (bigint that)
         //cout<<"*p="<<*p<<", *q="<<*q<<", carry="<<carry<<". val="<<val<<endl;
         if(val <= 9)
         {
-            res.at(k).v.insert(res.at(k).v.begin(),val);
+            res[k].v.insert(res[k].v.begin(),val);
             carry=0;
         }
         else
         {
             carry = val/10;
-            res.at(k).v.insert(res.at(k).v.begin(),val%10);
+            res[k].v.insert(res[k].v.begin(),val%10);
         }
         //for(int i:res[k].v) cout<<i; cout<<endl;
         if(p != v.begin())
@@ -352,7 +330,7 @@ bigint bigint::operator * (bigint that)
         {
             if(carry)
             {
-                res.at(k).v.insert(res.at(k).v.begin(),carry);
+                res[k].v.insert(res[k].v.begin(),carry);
                 carry=0;
             }
             if(q != that.v.begin())
@@ -363,7 +341,7 @@ bigint bigint::operator * (bigint that)
             //for(int i:res[k].v) cout<<i; cout<<endl;
             k++;
             for (int i=0; i<k; i++)
-                res.at(k).v.insert(res.at(k).v.begin(),0);
+                res[k].v.insert(res[k].v.begin(),0);
         }
     }
     for (int i=0; i<=k; i++)
@@ -375,68 +353,45 @@ bigint bigint::operator * (bigint that)
     return result;
 }
 
+bigint bigint::operator ++ ()  //prefix
+{
+    *this = *this+(bigint)1;
+    return *this;
+}
+bigint bigint::operator -- ()   //prefix
+{
+    *this = *this-(bigint)1;
+    return *this;
+}
+bigint bigint::operator ++ (int)  //postfix
+{
+    bigint x = *this;
+    *this = *this + (bigint)1;
+    return x;
+}
+bigint bigint::operator -- (int)  //postfix
+{
+    bigint x = *this;
+    *this = *this - (bigint)1;
+    return x;
+}
+
 void bigint::operator += (bigint that) { *this = *this + that; }
 void bigint::operator -= (bigint that) { *this = *this - that; }
 void bigint::operator *= (bigint that) { *this = *this * that; }
 
-bigint bigint::operator + (int that) { return *this + (bigint)that; }
-bigint bigint::operator - (int that) { return *this - (bigint)that; }
-bigint bigint::operator * (int that) { return *this * (bigint)that; }
-void bigint::operator += (int that) { *this = *this + (bigint)that; }
-void bigint::operator -= (int that) { *this = *this - (bigint)that; }
-void bigint::operator *= (int that) { *this = *this * (bigint)that; }
-bool bigint::operator > (int that) { return *this > (bigint)that; }
-bool bigint::operator < (int that) { return *this < (bigint)that; }
-bool bigint::operator >= (int that) { return *this >= (bigint)that; }
-bool bigint::operator <= (int that) { return *this <= (bigint)that; }
-bool bigint::operator == (int that) { return *this == (bigint)that; }
-bool bigint::operator != (int that) { return *this != (bigint)that; }
+bool operator < (int n, const bigint& x) { return (bigint)n < x; }
+bool operator > (int n, const bigint& x) { return (bigint)n > x; }
+bool operator <= (int n, const bigint& x) { return (bigint)n <= x; }
+bool operator >= (int n, const bigint& x) { return (bigint)n >= x; }
+bool operator == (int n, const bigint& x) { return (bigint)n == x; }
+bool operator != (int n, const bigint& x) { return (bigint)n != x; }
 
-static bigint bigint::factorial(bigint n)
-{
-    try { if(n.sign==false) throw invalid_argument("factorial on negative bigint");
-    } catch(invalid_argument& e) { cerr<<e.what()<<endl; }
-    if(n==(bigint)1 || n==(bigint)0)
-        return (bigint)1;
-    bigint res=1;
-    for (bigint i=2; i<=n; i=i+1)
-        res = res * i;
-    return res;
-}
-bigint bigint::factorial()
-{
-    try { if(sign==false) throw invalid_argument("factorial on negative bigint");
-    } catch(invalid_argument& e) { cerr<<e.what()<<endl; }
-    if(*this==(bigint)1 || *this==(bigint)0)
-        return (bigint)1;
-    bigint res=1;
-    for (bigint i=2; i<=*this; i=i+1)
-        res = res * i;
-    return res;
-}
-//    bigint operator / (int that)
-//    {
-//        bigint res;
-//        auto p = v.begin();
-//        int digits_divisor = to_string(that).size(), q;
-//        while(1)
-//        {
-//            int num=0;
-//            for(int i=0; i<digits_divisor; i++)
-//            {
-//                num *= 10;
-//                num += *p;
-//                p++;
-//            }
-//            q = num / that;
-//            res.v.insert(res.v.end(),0);
-//            p += digits_divisor;
-//            if(p >= res.v.end())
-//                break;
-//        }
-//
-//    }
-};
+bigint operator + (int n, const bigint& x) { return (bigint)n + x; }
+bigint operator - (int n, const bigint& x) { return (bigint)n - x; }
+bigint operator - (const bigint& x) { return (bigint)0 - x; }
+bigint operator * (int n, const bigint& x) { return (bigint)n * x; }
+
 ostream& operator << (ostream& strm, const bigint& b)
 {
     if(b.sign==false) strm<<'-';
@@ -451,9 +406,38 @@ istream& operator >> (istream& strm, bigint &b)
     b = s;
     return strm;
 }
+
+int signum(const bigint& n)
+{
+    if(n.sign == false)
+        return -1;
+    if(n.v.front()==0)
+        return 0;
+    return 1;
+}
+
+bigint abs(bigint n)
+{
+    n.sign = true;
+    return n;
+}
+
 string to_string (bigint x)
 {
     stringstream s;
     s<<x;
     return s.str();
+}
+
+bigint factorial(bigint n)
+{
+    try { if(signum(n) == -1) throw invalid_argument("factorial on negative bigint");
+    } catch(invalid_argument& e) { cerr<<e.what()<<endl; }
+
+    if(n==(bigint)1 || n==(bigint)0)
+        return 1;
+    bigint res=2, i=3;
+    while(i<=n)
+        res = res*i, i = i+1;
+    return res;
 }
