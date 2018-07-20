@@ -1,16 +1,18 @@
-#include<bits/stdc++.h>
+#include<iostream>
+#include<vector>
+#include<climits>
 using namespace std;
 
 #include "bigint.h"
 
-bigint bigint::add_mag(const bigint& a, const bigint& b)
+bigint bigint::add_mag(const bigint& that) const
 {
-    try {if(a.v.empty() || b.v.empty()) throw invalid_argument("operation on uninitialised bigints");
-    } catch(invalid_argument& e) { cerr<<e.what()<<endl; }
+    if(v.empty() || that.v.empty())
+        throw invalid_argument("operation on uninitialised bigints");
     bigint res;
     int carry=0;
-    auto p = a.v.end()-1;
-    auto q = b.v.end()-1;
+    auto p = v.end()-1;
+    auto q = that.v.end()-1;
     while(1)
     {
         int sum_digits = *p + *q + carry;
@@ -24,18 +26,18 @@ bigint bigint::add_mag(const bigint& a, const bigint& b)
             carry = sum_digits/10;
             res.v.insert(res.v.begin(),sum_digits%10);
         }
-        if( (p == a.v.begin() || p==zero.begin()) && \
-                (q == b.v.begin() || q==zero.begin()) )
+        if( (p == v.begin() || p==zero.begin()) && \
+                (q == that.v.begin() || q==zero.begin()) )
         {
             if(carry)
                 res.v.insert(res.v.begin(),carry);
             break;
         }
-        if(p == a.v.begin() || p==zero.begin())
+        if(p == v.begin() || p==zero.begin())
             p = zero.begin();
         else
             p--;
-        if(q == b.v.begin() || q==zero.begin() )
+        if(q == that.v.begin() || q==zero.begin() )
             q = zero.begin();
         else
             q--;
@@ -44,14 +46,13 @@ bigint bigint::add_mag(const bigint& a, const bigint& b)
     return res;
 }
 
-bigint bigint::subtract_mag(const bigint& a, const bigint& b) //assumes: |a| > |b|
+bigint bigint::subtract_mag(const bigint& that) const //assumes: |*this| > |that|
 {
-    try { if(a.v.empty() || b.v.empty()) throw invalid_argument("operation on uninitialised bigints");
-          //if(compare_mag(a,b)==-1) throw invalid_argument("invalid subtraction");
-    } catch(invalid_argument& e) { cerr<<e.what()<<endl; }
+    if(v.empty() || that.v.empty())
+        throw invalid_argument("operation on uninitialised bigints");
     bigint res;
-    auto p = a.v.end()-1;
-    auto q = b.v.end()-1;
+    auto p = v.end()-1;
+    auto q = that.v.end()-1;
     int carry=0;
     while(1)
     {
@@ -66,11 +67,11 @@ bigint bigint::subtract_mag(const bigint& a, const bigint& b) //assumes: |a| > |
             res.v.insert(res.v.begin(),sub_digits+10);
             carry = -1;
         }
-        if(q==b.v.begin() || q==zero.begin())
+        if(q==that.v.begin() || q==zero.begin())
             q=zero.begin();
         else
             q--;
-        if(p==a.v.begin())
+        if(p==v.begin())
             break;
         else
             p--;
@@ -88,25 +89,23 @@ bigint bigint::subtract_mag(const bigint& a, const bigint& b) //assumes: |a| > |
     return res;
 }
 
-int bigint::compare_mag(const bigint& a, const bigint& b)
+int bigint::compare_mag(const bigint& that) const
 {
-    try {if(a.v.empty() || b.v.empty()) throw invalid_argument("comparison on uninitialised bigints");
-    } catch(invalid_argument& e) { cerr<<e.what()<<endl; }
-    if(a.v.size() > b.v.size()) return 1;
-    else if (a.v.size() < b.v.size()) return -1;
-    for(auto i=a.v.begin(),j=b.v.begin();  ; i++,j++)
+    if(v.empty() || that.v.empty())
+        throw invalid_argument("comparison on uninitialised bigints");
+    if(v.size() > that.v.size()) return 1;
+    else if (v.size() < that.v.size()) return -1;
+    auto i=v.begin(); auto j=that.v.begin();
+    for(;  ; i++,j++)
     {
         if(*i > *j) return 1;
         if(*i < *j) return -1;
-        if(i==a.v.end())
-            return 0; ///equality case
+        if(i==v.end())
+            return 0; //equality case
     }
 }
 
-bigint::bigint()
-{
-    sign=true;
-}
+bigint::bigint() : sign(true) {}
 bigint::bigint(char *s)
 {
     if(s[0]=='-')
@@ -118,16 +117,9 @@ bigint::bigint(char *s)
         sign=true;
     for ( ; *s != '\0'; s++)
     {
-        try
-        {
-            if(!isdigit(*s))
-                throw invalid_argument("non-numeric initialiser for bigint");
-            v.push_back(*s-'0');
-        }
-        catch(invalid_argument& e)
-        {
-            cerr<<e.what()<<endl;
-        }
+        if(!isdigit(*s))
+            throw invalid_argument("non-numeric initialiser for bigint");
+        v.push_back(*s-'0');
     }
 }
 bigint::bigint(string s)
@@ -137,9 +129,9 @@ bigint::bigint(string s)
         sign=false;
         for (int i=1; i<s.size(); i++)
         {
-            if(!isdigit(i))
-                throw invalid_argument("non-numeric initialiser for bigint");
-            v.push_back(i-'0');
+            if(!isdigit(s[i]))
+                throw invalid_argument(("non-numeric initialiser " + s +" for bigint").c_str());
+            v.push_back(s[i]-'0');
         }
     }
     else
@@ -148,16 +140,18 @@ bigint::bigint(string s)
         for (char i:s)
         {
             if(!isdigit(i))
-                throw invalid_argument("non-numeric initialiser for bigint");
+                throw invalid_argument(("non-numeric initialiser " + s +" for bigint").c_str());
             v.push_back(i-'0');
         }
     }
 
 }
-bigint::bigint(int n)
+bigint::bigint(long long n)
 {
-    if(n>=0) sign=true;
-    else { sign=false; n=-n; }
+    if(n>=0)
+        sign=true;
+    else
+        { sign=false; n=-n; }
     if(n==0) v.insert(v.begin(),0);
     while(n)
     {
@@ -166,17 +160,32 @@ bigint::bigint(int n)
         n /= 10;
     }
 }
+bigint::bigint(unsigned long long n)
+{
+    sign=true;
+    if(n==0) v.insert(v.begin(),0);
+    while(n)
+    {
+        int digit = n%10;
+        v.insert(v.begin(),digit);
+        n /= 10;
+    }
+}
+bigint::bigint(long n) : bigint((long long)n) {}
+bigint::bigint(int n) : bigint((long long)n) {}
+bigint::bigint(unsigned int n) : bigint((unsigned long long)n) {}
+bigint::bigint(unsigned long n) : bigint((unsigned long long)n) {}
 
-bigint bigint::negate()
+bigint& bigint::negate()
 {
     if(sign == true) sign = false;
     else sign = true;
     return *this;
 }
-long long bigint::toInt()
+long long bigint::toInt() const
 {
-    try { if(compare_mag(*this,LLONG_MAX)==1) throw range_error("out of bounds of long long int");
-    } catch (range_error& e) { cerr<<e.what()<<endl; }
+    if(compare_mag(LLONG_MAX)==1)
+        throw range_error((to_string(*this) + "out of bounds of long long int"));
     long long n=0;
     for (int i : v)
     {
@@ -188,131 +197,146 @@ long long bigint::toInt()
     return n;
 }
 
-bool bigint::operator > (const bigint& that)
+
+bool operator > (const bigint& a, const bigint& b)
 {
-    if(sign && !that.sign) return true;
-    if(!sign && that.sign) return false;
-    if(sign && that.sign)
+    if(a.sign)
     {
-        if(compare_mag(*this,that)==1) return true;
+        if(!b.sign) return true;
+        else return a.compare_mag(b)==1;
+    }
+    else
+    {
+        if(b.sign) return false;
+        return (a.compare_mag(b)!=1);
+    }
+}
+bool operator < (const bigint& a, const bigint& b)
+{
+    if(a.sign)
+    {
+        if(b.sign) return a.compare_mag(b)==-1;
         else return false;
     }
-    if(compare_mag(*this,that)==1) return false;
-    else return true;
-}
-bool bigint::operator < (const bigint& that)
-{
-    if(sign && !that.sign) return false;
-    if(!sign && that.sign) return true;
-    if(sign && that.sign)
+    else
     {
-        if(compare_mag(*this,that)==-1) return true;
+        if(b.sign) return true;
+        else return a.compare_mag(b)==1;
+    }
+}
+bool operator >= (const bigint& a, const bigint& b)
+{
+    if(a.sign)
+    {
+        if(b.sign) return (a.compare_mag(b) != -1);
         else return false;
     }
-    if(compare_mag(*this,that)==-1) return false;
-    else return true;
-}
-bool bigint::operator >= (const bigint& that)
-{
-    if(sign && !that.sign) return true;
-    if(!sign && that.sign) return false;
-    if(sign && that.sign)
-    {
-        if(compare_mag(*this,that)==-1) return false;
-        else return true;
-    }
-    if(compare_mag(*this,that)==-1) return true;
-    else return false;
-}
-bool bigint::operator <= (const bigint& that)
-{
-    if(sign && !that.sign) return false;
-    if(!sign && that.sign) return true;
-    if(sign && that.sign)
-    {
-        if(compare_mag(*this,that)==1) return false;
-        else return true;
-    }
-    if(compare_mag(*this,that)==1) return true;
-    else return false;
-}
-bool bigint::operator == (const bigint& that)
-{
-    if(sign != that.sign)
-        return false;
-    if(compare_mag(*this,that)==0)
-        return true;
     else
-        return false;
+    {
+        if(b.sign) return false;
+        else return a.compare_mag(b)!=1;
+    }
 }
-bool bigint::operator != (const bigint& that)
+bool operator <= (const bigint& a, const bigint& b)
 {
-    if(sign != that.sign)
-        return true;
-    if(compare_mag(*this,that)==0)
-        return false;
+    if(a.sign)
+    {
+        if(b.sign) return a.compare_mag(b) != 1;
+        else return false;
+    }
     else
+    {
+        if(b.sign) return true;
+        else return a.compare_mag(b) != -1;
+    }
+}
+bool operator == (const bigint& a, const bigint& b)
+{
+    if(a.sign != b.sign)
+        return false;
+    return (a.compare_mag(b)==0);
+}
+bool operator != (const bigint& a, const bigint& b)
+{
+    if(a.sign != b.sign)
         return true;
+    return (a.compare_mag(b)!=0);
 }
 
-bigint bigint::operator + (const bigint& that)
+
+bigint operator + (const bigint& a, const bigint& b)
 {
-    if(sign && that.sign)
-        return add_mag(*this,that);
-    if(sign && !that.sign)
+    if(a.sign)
     {
-        if(compare_mag(*this,that)>=0)
-            return subtract_mag(*this,that);
+        if(b.sign)
+            return a.add_mag(b);
         else
-            return subtract_mag(that,*this).negate();
+        {
+            if(a.compare_mag(b)>=0)
+                return a.subtract_mag(b);
+            else
+                return b.subtract_mag(a).negate();
+        }
     }
-    if(!sign && that.sign)
+    else
     {
-        if(compare_mag(*this,that)>=0)
-            return subtract_mag(*this,that).negate();
+        if(b.sign)
+        {
+            if(a.compare_mag(b)>=0)
+                return a.subtract_mag(b).negate();
+            else
+                return b.subtract_mag(a);
+        }
         else
-            return subtract_mag(that,*this);
+            return a.add_mag(b).negate();
     }
-    return add_mag(*this,that).negate();
 }
 
-bigint bigint::operator - (bigint const& that)
+bigint operator - (const bigint& a, const bigint& b)
 {
-    if(sign && that.sign)
+    if(a.sign)
     {
-        if (compare_mag(*this,that) >= 0)
-            return subtract_mag(*this,that);
+        if(b.sign)
+        {
+            if (a.compare_mag(b) >= 0)
+                return a.subtract_mag(b);
+            else
+                return b.subtract_mag(a).negate();
+        }
         else
-            return subtract_mag(that,*this).negate();
+            return a.add_mag(b);
     }
-    if(!sign && that.sign)
+    else
     {
-        return add_mag(*this,that).negate();
-    }
-    if(!sign && !that.sign)
-    {
-        if (compare_mag(*this,that) >= 0)
-            return subtract_mag(*this,that).negate();
+        if(b.sign)
+            return a.add_mag(b).negate();
         else
-            return subtract_mag(that,*this);
+        {
+            if (a.compare_mag(b) >= 0)
+                return a.subtract_mag(b).negate();
+            else
+                return b.subtract_mag(a);
+        }
     }
-    return add_mag(*this,that);
 }
 
-bigint bigint::operator * (const bigint& that)
+
+
+bigint operator * (const bigint& a, const bigint& b)
 {
+    if(a.v.empty() || b.v.empty())
+        throw invalid_argument("multiplication on uninitialised bigints");
     bigint result = 0;
-    if(*this == (bigint)0 || (bigint)0 == that)
+    if(a == (bigint)0 || b == (bigint)0)
         return result;
-    vector <bigint> res(that.v.size());
+    vector <bigint> res(b.v.size());
     int carry=0;
-    auto p = v.end()-1;
-    auto q = that.v.end()-1;
+    auto p = a.v.end()-1;
+    auto q = b.v.end()-1;
     int k=0;
     while(1)
     {
         int val = *p * *q + carry;
-        //cout<<"*p="<<*p<<", *q="<<*q<<", carry="<<carry<<". val="<<val<<endl;
         if(val <= 9)
         {
             res[k].v.insert(res[k].v.begin(),val);
@@ -323,8 +347,7 @@ bigint bigint::operator * (const bigint& that)
             carry = val/10;
             res[k].v.insert(res[k].v.begin(),val%10);
         }
-        //for(int i:res[k].v) cout<<i; cout<<endl;
-        if(p != v.begin())
+        if(p != a.v.begin())
             p--;
         else
         {
@@ -333,32 +356,28 @@ bigint bigint::operator * (const bigint& that)
                 res[k].v.insert(res[k].v.begin(),carry);
                 carry=0;
             }
-            if(q != that.v.begin())
+            if(q != b.v.begin())
                 q--;
             else
                 break;
-            p=v.end()-1;
-            //for(int i:res[k].v) cout<<i; cout<<endl;
+            p=a.v.end()-1;
             k++;
             for (int i=0; i<k; i++)
                 res[k].v.insert(res[k].v.begin(),0);
         }
     }
     for (int i=0; i<=k; i++)
-    {
-        //cout<<res[i]<<endl;
-        result = add_mag(result,res[i]);
-    }
-    result.sign = (sign==that.sign);
+        result = result.add_mag(res[i]);
+    result.sign = (a.sign==b.sign);
     return result;
 }
 
-bigint bigint::operator ++ ()  //prefix
+bigint& bigint::operator ++ ()  //prefix
 {
     *this = *this+(bigint)1;
     return *this;
 }
-bigint bigint::operator -- ()   //prefix
+bigint& bigint::operator -- ()   //prefix
 {
     *this = *this-(bigint)1;
     return *this;
@@ -376,25 +395,23 @@ bigint bigint::operator -- (int)  //postfix
     return x;
 }
 
-void bigint::operator += (bigint that) { *this = *this + that; }
-void bigint::operator -= (bigint that) { *this = *this - that; }
-void bigint::operator *= (bigint that) { *this = *this * that; }
+void bigint::operator += (const bigint& that) { *this = *this + that; }
+void bigint::operator -= (const bigint& that) { *this = *this - that; }
+void bigint::operator *= (const bigint& that) { *this = *this * that; }
+void bigint::operator /= (int that) { *this = *this / that; }
+void bigint::operator %= (int that) { *this = *this % that; }
+void bigint::operator |= (const bigint& that) { *this = *this | that; }
+void bigint::operator &= (const bigint& that) { *this = *this & that; }
+void bigint::operator ^= (const bigint& that) { *this = *this ^ that; }
+void bigint::operator <<= (int that) { *this = *this << that; }
+void bigint::operator >>= (int that) { *this = *this >> that; }
 
-bool operator < (int n, const bigint& x) { return (bigint)n < x; }
-bool operator > (int n, const bigint& x) { return (bigint)n > x; }
-bool operator <= (int n, const bigint& x) { return (bigint)n <= x; }
-bool operator >= (int n, const bigint& x) { return (bigint)n >= x; }
-bool operator == (int n, const bigint& x) { return (bigint)n == x; }
-bool operator != (int n, const bigint& x) { return (bigint)n != x; }
-
-bigint operator + (int n, const bigint& x) { return (bigint)n + x; }
-bigint operator - (int n, const bigint& x) { return (bigint)n - x; }
-bigint operator - (const bigint& x) { return (bigint)0 - x; }
-bigint operator * (int n, const bigint& x) { return (bigint)n * x; }
+inline bigint operator - (const bigint& x) { return (bigint)0 - x; }
 
 ostream& operator << (ostream& strm, const bigint& b)
 {
-    if(b.sign==false) strm<<'-';
+    if(b.sign==false)
+        strm<<'-';
     for (int i : b.v)
         strm<<i;
     return strm;
@@ -407,6 +424,23 @@ istream& operator >> (istream& strm, bigint &b)
     return strm;
 }
 
+int bigint::operator[] (int n)
+{
+    if(n >= v.size())
+        throw out_of_range(("index " + to_string(n) + " out of range").c_str());
+    return v[n];
+}
+
+string to_string(const bigint& x)
+{
+    string s;
+    if(x.sign==false)
+        s.insert(s.begin(),'-');
+    for (int i : x.v)
+        s.insert(s.end(), i+'0');
+    return s;
+}
+
 int signum(const bigint& n)
 {
     if(n.sign == false)
@@ -416,28 +450,429 @@ int signum(const bigint& n)
     return 1;
 }
 
-bigint abs(bigint n)
+inline bigint abs(const bigint& n)
 {
-    n.sign = true;
-    return n;
+    return (n.sign==false ? -n : n);
 }
 
-string to_string (bigint x)
+bigint factorial(const bigint& n)
 {
-    stringstream s;
-    s<<x;
-    return s.str();
-}
-
-bigint factorial(bigint n)
-{
-    try { if(signum(n) == -1) throw invalid_argument("factorial on negative bigint");
-    } catch(invalid_argument& e) { cerr<<e.what()<<endl; }
-
-    if(n==(bigint)1 || n==(bigint)0)
+    if(signum(n) == -1)
+        throw invalid_argument("factorial on negative bigint");
+    if(n==(const bigint)1 || n==(const bigint)0)
         return 1;
     bigint res=2, i=3;
     while(i<=n)
         res = res*i, i = i+1;
+    return res;
+}
+
+bigint operator / (const bigint& a, long long b)
+{
+    if(a.v.empty())
+        throw invalid_argument("division on uninitialised bigint");
+    if(b == 0)
+        throw invalid_argument("division by 0");
+    if(a.compare_mag(b)==-1)
+        return (bigint)0;
+    bigint res;
+    auto p = a.v.begin();
+    long long q, num=0;
+    bool b_sign = (b>=0 ? true : false);
+    if(b_sign==false) b = -b;
+    while(num < b)
+    {
+        num *= 10;
+        num += *p;
+        p++;
+    }
+    while(1)
+    {
+        q = num / b;
+        res.v.push_back(q);
+        if(p==a.v.end())
+            break;
+        num = (num % b) * 10 + *p;
+        p++;
+    }
+    res.sign = (a.sign == b_sign);
+    return res;
+}
+long long operator % (const bigint& a, long long b)
+{
+    if(a.v.empty())
+        throw invalid_argument("modulo on uninitialised bigint");
+    if(b == 0)
+        throw invalid_argument("division by 0");
+    if(a.compare_mag(b)==-1)
+        return a.toInt();
+    auto p = a.v.begin();
+    long long res, num=0;
+    while(num < b)
+    {
+        num *= 10;
+        num += *p;
+        p++;
+    }
+    while(1)
+    {
+        res = num % b;
+        if(p==a.v.end())
+            break;
+        num = res * 10 + *p;
+        p++;
+    }
+    return res;
+}
+bigint operator / (const bigint& a, const bigint& b) { return a/b.toInt(); }
+long long operator % (const bigint& a, const bigint& b) { return a%b.toInt(); }
+
+string bigint::binary() const
+{
+    string str;
+    bigint x = abs(*this);
+    while(x>0)
+    {
+        str.insert(str.begin(),x%2+'0');
+        x=x/2;
+    }
+    if(sign==false)
+        str.insert(str.begin(),'-');
+    return str;
+}
+
+void bigint::twosComplement()
+{
+    for (int i=0; i<v.size(); i++)
+        v[i] = (v[i]==0 ? 1 : 0);
+    auto p = v.end()-1;
+    int flag=0;
+    while(*p==1)
+    {
+        *p=0;
+        if(p==v.begin())
+        {
+            flag=1;
+            break;
+        }
+        else
+            p--;
+    }
+    if(flag)
+        v.insert(v.begin(),1);
+    else
+        *p=1;
+}
+bigint bigint::decimal()
+{
+    bigint res=0; int place_value=1;
+    for (auto r=v.rbegin(); r!=v.rend(); ++r)
+    {
+        long long x = (*r) * place_value;
+        res = res.add_mag(x);
+        place_value *= 2;
+    }
+    return res;
+}
+
+bigint operator | (const bigint& a, const bigint& b)
+{
+    if(a.v.empty() || b.v.empty())
+        throw invalid_argument("bitwise OR on uninitialised bigints");
+    // Converting numbers to binary form
+    bigint op1 = a.binary();
+    if(a.sign==false)
+        op1.twosComplement();
+    bigint op2 = b.binary();
+    if(b.sign==false)
+        op2.twosComplement();
+//    cout<<"op1: "<<op1<<'\n';
+//    cout<<"op2: "<<op2<<'\n';
+
+    auto p = op1.v.end()-1;
+    auto q = op2.v.end()-1;
+
+    // Computing bitwise OR
+    bigint bin;
+    bool breaked=false;
+    while(1)
+    {
+        int bit = *p | *q;
+        bin.v.insert(bin.v.begin(),bit);
+
+        if(p!=op1.v.begin() && q!=op2.v.begin())
+            p--, q--;
+        else if(p==op1.v.begin())
+        {
+            if(q==op2.v.begin())
+                break;
+            int starp = a.sign==true ? 0 : 1;
+            while(1)
+            {
+                q--;
+                bit = starp | *q;
+                bin.v.insert(bin.v.begin(),bit);
+                if(q==op2.v.begin())
+                { breaked=true; break; }
+            }
+        }
+        else ///if(q==op2.v.begin())
+        {
+            int starq = b.sign==true ? 0 : 1;
+            while(1)
+            {
+                p--;
+                bit = *p | starq;
+                bin.v.insert(bin.v.begin(),bit);
+                if(p==op1.v.begin())
+                { breaked=true; break; }
+            }
+        }
+        if(breaked)
+            break;
+    }
+    //cout<<"bin: "<<bin<<endl;
+    // Taking 2's complement if output is to be negative
+    bool flag=true;
+    if(!a.sign || !b.sign)
+    {
+        bin.twosComplement();
+        flag=false;
+    }
+    //cout<<"bin: "<<bin<<endl;
+    bigint res = bin.decimal();
+    //cout<<"res: "<<res<<endl;
+    if(flag==false)
+        res.sign=false;
+
+    return res;
+}
+
+bigint operator & (const bigint& a, const bigint& b)
+{
+    if(a.v.empty() || b.v.empty())
+        throw invalid_argument("bitwise AND on uninitialised bigints");
+    // Converting numbers to binary form
+    bigint op1 = a.binary();
+    if(a.sign==false)
+        op1.twosComplement();
+    bigint op2 = b.binary();
+    if(b.sign==false)
+        op2.twosComplement();
+//    cout<<"op1: "<<op1<<'\n';
+//    cout<<"op2: "<<op2<<'\n';
+
+    auto p = op1.v.end()-1;
+    auto q = op2.v.end()-1;
+
+    // Computing bitwise AND
+    bigint bin;
+    bool breaked=false;
+    while(1)
+    {
+        int bit = *p & *q;
+        bin.v.insert(bin.v.begin(),bit);
+
+        if(p!=op1.v.begin() && q!=op2.v.begin())
+            p--, q--;
+        else if(p==op1.v.begin())
+        {
+            if(q==op2.v.begin())
+                break;
+            int starp = a.sign==true ? 0 : 1;
+            while(1)
+            {
+                q--;
+                bit = starp & *q;
+                bin.v.insert(bin.v.begin(),bit);
+                if(q==op2.v.begin())
+                { breaked=true; break; }
+            }
+        }
+        else ///if(q==op2.v.begin())
+        {
+            int starq = b.sign==true ? 0 : 1;
+            while(1)
+            {
+                p--;
+                bit = *p & starq;
+                bin.v.insert(bin.v.begin(),bit);
+                if(p==op1.v.begin())
+                { breaked=true; break; }
+            }
+        }
+        if(breaked)
+            break;
+    }
+    //cout<<"bin: "<<bin<<'\n';
+
+    // Taking 2's complement if output is to be negative
+    bool sign_flag=true;
+    if(!a.sign && !b.sign)
+    {
+        bin.twosComplement();
+        sign_flag=false;
+    }
+    //cout<<"bin: "<<bin<<'\n';
+
+    // Computing decimal value of binary
+    bigint res = bin.decimal();
+
+    res.sign = sign_flag;
+    //cout<<"res: "<<res<<'\n';
+
+    return res;
+}
+
+bigint operator ^ (const bigint& a, const bigint& b)
+{
+    if(a.v.empty() || b.v.empty())
+        throw invalid_argument("bitwise XOR on uninitialised bigints");
+    // Converting numbers to binary form
+    bigint op1 = a.binary();
+    if(a.sign==false)
+        op1.twosComplement();
+    bigint op2 = b.binary();
+    if(b.sign==false)
+        op2.twosComplement();
+
+    auto p = op1.v.end()-1;
+    auto q = op2.v.end()-1;
+
+    // Computing bitwise AND
+    bigint bin;
+    bool breaked=false;
+    while(1)
+    {
+        int bit = *p ^ *q;
+        bin.v.insert(bin.v.begin(),bit);
+
+        if(p!=op1.v.begin() && q!=op2.v.begin())
+            p--, q--;
+        else if(p==op1.v.begin())
+        {
+            if(q==op2.v.begin())
+                break;
+            int starp = a.sign==true ? 0 : 1;
+            while(1)
+            {
+                q--;
+                bit = starp ^ *q;
+                bin.v.insert(bin.v.begin(),bit);
+                if(q==op2.v.begin())
+                { breaked=true; break; }
+            }
+        }
+        else ///if(q==op2.v.begin())
+        {
+            int starq = b.sign==true ? 0 : 1;
+            while(1)
+            {
+                p--;
+                bit = *p ^ starq;
+                bin.v.insert(bin.v.begin(),bit);
+                if(p==op1.v.begin())
+                { breaked=true; break; }
+            }
+        }
+        if(breaked)
+            break;
+    }
+
+    // Taking 2's complement if output is to be negative
+    bool sign_flag=true;
+    if(a.sign != b.sign)
+    {
+        bin.twosComplement();
+        sign_flag=false;
+    }
+
+    // Computing decimal value of binary
+    bigint res = bin.decimal();
+
+    res.sign = sign_flag;
+
+    return res;
+}
+
+bigint operator ~ (const bigint& B)
+{
+    if(B.v.empty())
+        throw invalid_argument("bitwise NOT on uninitialised bigint");
+    bigint bin = B.binary();
+    bigint res;
+
+    if(B.sign==true)
+    {
+        // Flip the bits
+        for (int i=0; i<bin.v.size(); i++)
+            bin.v[i] = (bin.v[i]==0 ? 1 : 0);
+
+        bin.twosComplement();
+        res = bin.decimal();
+        res.sign=false;
+    }
+
+    else
+    {
+        bin.twosComplement();
+
+        //Flip the bits
+        for (int i=0; i<bin.v.size(); i++)
+            bin.v[i] = (bin.v[i]==0 ? 1 : 0);
+
+        res = bin.decimal();
+    }
+
+    return res;
+}
+
+bigint operator << (const bigint& a, int n)
+{
+    if(a.v.empty())
+        throw invalid_argument("operator << on uninitialised bigint");
+    if(n<0)
+        throw invalid_argument("negative left-shift value");
+    bigint bin = a.binary();
+    while(n--)
+        bin.v.push_back(0);
+    //cout<<"bin: "<<bin<<'\n';
+
+    bigint res = bin.decimal();
+    res.sign = a.sign;
+    //cout<<"res: "<<res<<'\n';
+
+    return res;
+}
+
+bigint operator >> (const bigint& a, int n)
+{
+    if(a.v.empty())
+        throw invalid_argument("operator >> on uninitialised bigint");
+    if(n<0)
+        throw invalid_argument("negative right-shift value");
+    bigint bin = a.binary();
+    if(a.sign==false)
+        bin.twosComplement();
+    //cout<<"bin: "<<bin<<'\n';
+
+    bigint resbin;
+    int bit = (a.sign==true ? 0 : 1);
+    for(int i=0; i<n; i++)
+        resbin.v.push_back(bit);
+
+    int k = bin.v.size()-n;
+    for (int i=0; i<k; i++)
+        resbin.v.push_back(bin.v[i]);
+    //cout<<"resbin: "<<resbin<<'\n';
+
+    if(a.sign==false)
+        resbin.twosComplement();
+    //cout<<"resbin: "<<resbin<<'\n';
+
+    bigint res = resbin.decimal();
+
+    res.sign = a.sign;
+    //cout<<"res: "<<res<<'\n';
     return res;
 }
