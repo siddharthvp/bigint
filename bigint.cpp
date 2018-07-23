@@ -565,7 +565,7 @@ void bigint::twosComplement()
 }
 bigint bigint::decimal()
 {
-    bigint res=0; int place_value=1;
+    bigint res=0; long long place_value=1;
     for (auto r=v.rbegin(); r!=v.rend(); ++r)
     {
         long long x = (*r) * place_value;
@@ -875,4 +875,37 @@ bigint operator >> (const bigint& a, int n)
     res.sign = a.sign;
     //cout<<"res: "<<res<<'\n';
     return res;
+}
+
+bigint bigint::flipbit(int n)
+{
+    if(n>=binary().size()|| n<0)
+        throw out_of_range(("index " + to_string(n) + " out of range").c_str());
+    bigint bin = binary();
+    bin.v[n] = (bin.v[n]==0 ? 1 : 0);
+    return bin.decimal();
+}
+bigint bigint::setbit(int n)
+{
+    if(n>=binary().size() || n<0)
+        throw out_of_range(("index " + to_string(n) + " out of range").c_str());
+    bigint bin = binary();
+    bin.v[n] = 1;
+    return bin.decimal();
+}
+bigint bigint::clearbit(int n)
+{
+    if(n>=binary().size() || n<0)
+        throw out_of_range(("index " + to_string(n) + " out of range").c_str());
+    bigint bin = binary();
+    bin.v[n] = 0;
+    return bin.decimal();
+}
+bool bigint::testbit(int n)
+{
+    if(n>=binary().size() || n<0)
+        throw out_of_range(("index " + to_string(n) + " out of range").c_str());
+    bigint bin = binary();
+    if(bin.v[n]==1) return true;
+    else return false;
 }

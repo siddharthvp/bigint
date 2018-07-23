@@ -19,3 +19,5 @@ To-do:
 <ul>
 <li>Rewrite the multiplication function to use the Karatsuba algorithm, which is more efficient than the simple digit-by-digit multiplication algorithm presently used.</li>
 </ul>
+
+Tested in g++ 5.4.0.

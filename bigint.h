@@ -64,6 +64,11 @@ class bigint
         friend bigint abs(const bigint&);          //returns absolute value of number without changing the number
         friend string to_string(const bigint&);
 
+        bigint flipbit(int);
+        bigint setbit(int);
+        bigint clearbit(int);
+        bool testbit(int);
+
     private:
 
         vector <int> v; //vector to store the digits of the number
