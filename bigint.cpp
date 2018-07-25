@@ -372,39 +372,37 @@ bigint operator * (const bigint& a, const bigint& b)
     return result;
 }
 
-bigint& bigint::operator ++ ()  //prefix
+bigint& bigint::operator ++ ()  //pre-increment
 {
-    *this = *this+(bigint)1;
-    return *this;
+    return *this = *this+(bigint)1;
 }
-bigint& bigint::operator -- ()   //prefix
+bigint& bigint::operator -- ()   //pre-decrement
 {
-    *this = *this-(bigint)1;
-    return *this;
+    return *this = *this-(bigint)1;
 }
-bigint bigint::operator ++ (int)  //postfix
+const bigint bigint::operator ++ (int)  //post-increment
 {
     bigint x = *this;
     *this = *this + (bigint)1;
     return x;
 }
-bigint bigint::operator -- (int)  //postfix
+const bigint bigint::operator -- (int)  //post-decrement
 {
     bigint x = *this;
     *this = *this - (bigint)1;
     return x;
 }
 
-void bigint::operator += (const bigint& that) { *this = *this + that; }
-void bigint::operator -= (const bigint& that) { *this = *this - that; }
-void bigint::operator *= (const bigint& that) { *this = *this * that; }
-void bigint::operator /= (int that) { *this = *this / that; }
-void bigint::operator %= (int that) { *this = *this % that; }
-void bigint::operator |= (const bigint& that) { *this = *this | that; }
-void bigint::operator &= (const bigint& that) { *this = *this & that; }
-void bigint::operator ^= (const bigint& that) { *this = *this ^ that; }
-void bigint::operator <<= (int that) { *this = *this << that; }
-void bigint::operator >>= (int that) { *this = *this >> that; }
+bigint& bigint::operator += (const bigint& that) { return *this = *this + that; }
+bigint& bigint::operator -= (const bigint& that) { return *this = *this - that; }
+bigint& bigint::operator *= (const bigint& that) { return *this = *this * that; }
+bigint& bigint::operator /= (int that) { return *this = *this / that; }
+bigint& bigint::operator %= (int that) { return *this = *this % that; }
+bigint& bigint::operator |= (const bigint& that) { return *this = *this | that; }
+bigint& bigint::operator &= (const bigint& that) { return *this = *this & that; }
+bigint& bigint::operator ^= (const bigint& that) { return *this = *this ^ that; }
+bigint& bigint::operator <<= (int that) { return *this = *this << that; }
+bigint& bigint::operator >>= (int that) { return *this = *this >> that; }
 
 inline bigint operator - (const bigint& x) { return (bigint)0 - x; }
 
@@ -426,9 +424,14 @@ istream& operator >> (istream& strm, bigint &b)
 
 int bigint::operator[] (int n)
 {
-    if(n >= v.size())
+    if(n >= v.size() || n<0)
         throw out_of_range(("index " + to_string(n) + " out of range").c_str());
     return v[n];
+}
+
+int bigint::num_digits() const
+{
+    return v.size();
 }
 
 string to_string(const bigint& x)
@@ -459,7 +462,7 @@ bigint factorial(const bigint& n)
 {
     if(signum(n) == -1)
         throw invalid_argument("factorial on negative bigint");
-    if(n==(const bigint)1 || n==(const bigint)0)
+    if(n==(bigint)1 || n==(bigint)0)
         return 1;
     bigint res=2, i=3;
     while(i<=n)
@@ -879,7 +882,7 @@ bigint operator >> (const bigint& a, int n)
 
 bigint bigint::flipbit(int n)
 {
-    if(n>=binary().size()|| n<0)
+    if(n>=binary().size() || n<0)
         throw out_of_range(("index " + to_string(n) + " out of range").c_str());
     bigint bin = binary();
     bin.v[n] = (bin.v[n]==0 ? 1 : 0);

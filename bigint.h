@@ -18,6 +18,8 @@ class bigint
         bigint& negate();    //changes the sign of the number and returns it
         long long toInt() const;  //converts to long long type if possible, else throws range_error
         string binary() const;    //returns binary form of magnitude of number with a minus sign if number is negative
+        int num_digits() const;
+        int operator[] (int);   //return digit in given position from left (zero-indexed)
 
         friend bool operator > (const bigint&, const bigint&);
         friend bool operator < (const bigint&, const bigint&);
@@ -34,23 +36,21 @@ class bigint
         friend bigint operator / (const bigint& a, const bigint& b);   //converts b to long long
         friend long long operator % (const bigint& a, const bigint& b);
 
-        int operator[] (int);   //return digit in given position from left (zero-indexed)
-
         bigint& operator ++ ();     //pre-increment
         bigint& operator -- ();     //pre-decrement
-        bigint operator ++ (int);   //post-increment
-        bigint operator -- (int);   //post-decrement
+        const bigint operator ++ (int);   //post-increment
+        const bigint operator -- (int);   //post-decrement
 
-        void operator += (const bigint&);
-        void operator -= (const bigint&);
-        void operator *= (const bigint&);
-        void operator /= (int);
-        void operator %= (int);
-        void operator |= (const bigint&);
-        void operator &= (const bigint&);
-        void operator ^= (const bigint&);
-        void operator <<= (int);
-        void operator >>= (int);
+        bigint& operator += (const bigint&);
+        bigint& operator -= (const bigint&);
+        bigint& operator *= (const bigint&);
+        bigint& operator /= (int);
+        bigint& operator %= (int);
+        bigint& operator |= (const bigint&);
+        bigint& operator &= (const bigint&);
+        bigint& operator ^= (const bigint&);
+        bigint& operator <<= (int);
+        bigint& operator >>= (int);
 
         friend bigint operator | (const bigint&, const bigint&);
         friend bigint operator & (const bigint&, const bigint&);
