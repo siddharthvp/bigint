@@ -6,7 +6,7 @@ class bigint
     public:
 
         bigint();
-        bigint(char *);
+        bigint(const char *);
         bigint(string);
         bigint(int);
         bigint(long);
@@ -65,6 +65,7 @@ class bigint
         friend bigint abs(const bigint&);          //returns absolute value of number without changing the number
         friend string to_string(const bigint&);
         friend bigint factorial(const bigint&);
+        friend bigint random(const bigint&);
 
         bigint flipbit(int);
         bigint setbit(int);
@@ -80,13 +81,13 @@ class bigint
         bigint subtract_mag(const bigint&) const; //assumes: |*this| > |that|
         int compare_mag(const bigint&) const;
         void twosComplement();     //Converts binary bigint to its 2s complement
-        bigint decimal();          //Returns decimal form of binary bigint
+        bigint decimal() const;          //Returns decimal form of binary bigint
 
 };
 
 istream& operator >> (istream&, bigint&);   //to facilitate reading a bigint variable using cin>>
 
-bigint operator - (const bigint&);
-
+bigint operator - (bigint);
+bigint factorial(long long);
 
 #endif // BIGINT_H

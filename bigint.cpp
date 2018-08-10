@@ -1,7 +1,6 @@
 #include<iostream>
 #include<vector>
 #include<climits>
-#include<cmath>
 using namespace std;
 
 #include "bigint.h"
@@ -107,7 +106,7 @@ int bigint::compare_mag(const bigint& that) const
 }
 
 bigint::bigint() : sign(true) {}
-bigint::bigint(char *s)
+bigint::bigint(const char *s)
 {
     if(s[0]=='-')
     {
@@ -354,58 +353,124 @@ const bigint bigint::operator -- (int)  //post-decrement
     return x;
 }
 
-constexpr unsigned long long MAX = sqrt(ULLONG_MAX);
 
-bigint operator * (const bigint& A, const bigint& B)
+
+
+//constexpr unsigned long long MAX = sqrt(ULLONG_MAX);
+//          //KARATSUBA MULTILICATION -- SLOW
+//bigint operator * (const bigint& A, const bigint& B)
+//{
+//    //cout<<A<<'*'<<B<<endl;
+//    if(A.v.empty() || B.v.empty())
+//        throw invalid_argument("multiplication on uninitialised bigints");
+//    bigint result;
+//    if(A.compare_mag(MAX)==-1 && B.compare_mag(MAX)==-1)
+//        result = A.toUnsigned() * B.toUnsigned();
+//    else
+//    {
+//        int i, na=A.v.size(), nb=B.v.size();
+//
+//        bigint a,b,c,d;
+//        if(na==1)
+//            a.v.push_back(0);
+//        for (i=0; i<na/2; i++)
+//            a.v.push_back(A.v[i]);
+//        for (; i<na; i++)
+//            b.v.push_back(A.v[i]);
+//        if(nb==1)
+//            c.v.push_back(0);
+//        for (i=0; i<nb/2; i++)
+//            c.v.push_back(B.v[i]);
+//        for (; i<nb; i++)
+//            d.v.push_back(B.v[i]);
+//        bigint ac = a*c, bd = b*d, ad = a*d, bc = b*c;
+//
+//        for (i=0; i<(na-na/2+nb-nb/2); i++) ac.v.push_back(0);
+//        for (i=0; i<(na-na/2); i++) ad.v.push_back(0);
+//        for (i=0; i<(nb-nb/2); i++) bc.v.push_back(0);
+//        //cout<<setw(30)<<ac<<endl<<setw(30)<<ad<<endl<<setw(30)<<bc<<endl<<setw(30)<<bd<<endl;
+//        result = ac.add_mag(ad).add_mag(bc).add_mag(bd);
+//    }
+//
+//    result.sign = (A.sign==B.sign);
+//    return result;
+//}
+
+
+
+bigint operator * (bigint const& a, bigint const& b)
 {
-    //cout<<A<<'*'<<B<<endl;
-    if(A.v.empty() || B.v.empty())
+    if(a.v.empty() || b.v.empty())
         throw invalid_argument("multiplication on uninitialised bigints");
-    bigint result;
-    if(A.compare_mag(MAX)==-1 && B.compare_mag(MAX)==-1)
-        result = A.toUnsigned() * B.toUnsigned();
-    else
+    bigint result = 0;
+    if(a.compare_mag(0)==0 || b.compare_mag(0)==0)
+        return result;
+    vector <bigint> res(b.v.size());
+    int carry=0;
+    auto p = a.v.end()-1;
+    auto q = b.v.end()-1;
+    int k=0;
+    while(1)
     {
-        int i, na=A.v.size(), nb=B.v.size();
-
-        bigint a,b,c,d;
-        if(na==1)
-            a.v.push_back(0);
-        for (i=0; i<na/2; i++)
-            a.v.push_back(A.v[i]);
-        for (; i<na; i++)
-            b.v.push_back(A.v[i]);
-        if(nb==1)
-            c.v.push_back(0);
-        for (i=0; i<nb/2; i++)
-            c.v.push_back(B.v[i]);
-        for (; i<nb; i++)
-            d.v.push_back(B.v[i]);
-        bigint ac = a*c, bd = b*d, ad = a*d, bc = b*c;
-
-        for (i=0; i<(na-na/2+nb-nb/2); i++) ac.v.push_back(0);
-        for (i=0; i<(na-na/2); i++) ad.v.push_back(0);
-        for (i=0; i<(nb-nb/2); i++) bc.v.push_back(0);
-        //cout<<setw(30)<<ac<<endl<<setw(30)<<ad<<endl<<setw(30)<<bc<<endl<<setw(30)<<bd<<endl;
-        result = ac.add_mag(ad).add_mag(bc).add_mag(bd);
+        int val = *p * *q + carry;
+        //cout<<"*p="<<*p<<", *q="<<*q<<", carry="<<carry<<". val="<<val<<endl;
+        if(val <= 9)
+        {
+            res[k].v.insert(res[k].v.begin(),val);
+            carry=0;
+        }
+        else
+        {
+            carry = val/10;
+            res[k].v.insert(res[k].v.begin(),val%10);
+        }
+        //for(int i:res[k].v) cout<<i; cout<<endl;
+        if(p != a.v.begin())
+            p--;
+        else
+        {
+            if(carry)
+            {
+                res[k].v.insert(res[k].v.begin(),carry);
+                carry=0;
+            }
+            if(q != b.v.begin())
+                q--;
+            else
+                break;
+            p=a.v.end()-1;
+            //for(int i:res[k].v) cout<<i; cout<<endl;
+            k++;
+            for (int i=0; i<k; i++)
+                res[k].v.insert(res[k].v.begin(),0);
+        }
     }
-
-    result.sign = (A.sign==B.sign);
+    for (int i=0; i<=k; i++)
+    {
+        //cout<<res[i]<<endl;
+        result = result.add_mag(res[i]);
+    }
+    result.sign = (a.sign==b.sign);
     return result;
 }
 
-bigint& bigint::operator += (const bigint& that) { return *this = *this + that; }
-bigint& bigint::operator -= (const bigint& that) { return *this = *this - that; }
-bigint& bigint::operator *= (const bigint& that) { return *this = *this * that; }
-bigint& bigint::operator /= (int that) { return *this = *this / that; }
-bigint& bigint::operator %= (int that) { return *this = *this % that; }
-bigint& bigint::operator |= (const bigint& that) { return *this = *this | that; }
-bigint& bigint::operator &= (const bigint& that) { return *this = *this & that; }
-bigint& bigint::operator ^= (const bigint& that) { return *this = *this ^ that; }
-bigint& bigint::operator <<= (int that) { return *this = *this << that; }
-bigint& bigint::operator >>= (int that) { return *this = *this >> that; }
 
-inline bigint operator - (const bigint& x) { return (bigint)0 - x; }
+
+
+
+
+inline bigint& bigint::operator += (const bigint& that) { return *this = *this + that; }
+inline bigint& bigint::operator -= (const bigint& that) { return *this = *this - that; }
+inline bigint& bigint::operator *= (const bigint& that) { return *this = *this * that; }
+inline bigint& bigint::operator /= (int that) { return *this = *this / that; }
+inline bigint& bigint::operator %= (int that) { return *this = *this % that; }
+inline bigint& bigint::operator |= (const bigint& that) { return *this = *this | that; }
+inline bigint& bigint::operator &= (const bigint& that) { return *this = *this & that; }
+inline bigint& bigint::operator ^= (const bigint& that) { return *this = *this ^ that; }
+inline bigint& bigint::operator <<= (int that) { return *this = *this << that; }
+inline bigint& bigint::operator >>= (int that) { return *this = *this >> that; }
+
+inline bigint operator - (bigint x) { return x.negate(); }
 
 ostream& operator << (ostream& strm, const bigint& b)
 {
@@ -439,7 +504,7 @@ int bigint::operator[] (int n)
     }
 }
 
-int bigint::num_digits() const
+inline int bigint::num_digits() const
 {
     return v.size();
 }
@@ -472,10 +537,25 @@ bigint factorial(const bigint& n)
 {
     if(n.sign == false)
         throw invalid_argument("factorial on negative bigint");
-    if(n==(bigint)1 || n==(bigint)0)
+    if(n.v.size()==1 && n.v[0]<=1)  //if n is 0 or 1
         return 1;
     bigint res=2, i=3;
     while(i<=n)
+    {
+        res = res*i;
+        cout<<i<<"! = "<<res<<endl;
+        i=i+1;
+    }
+    return res;
+}
+bigint factorial(long long n)
+{
+    if(n < 0)
+        throw invalid_argument("factorial on negative number");
+    if(n<=1)  //if n is 0 or 1
+        return 1;
+    bigint res=2, i=3, x=n;
+    while(i<=x)
     {
         res = res*i;
         cout<<i<<"! = "<<res<<endl;
@@ -580,7 +660,7 @@ void bigint::twosComplement()
     else
         *p=1;
 }
-bigint bigint::decimal()
+bigint bigint::decimal() const
 {
     bigint res=0; long long place_value=1;
     for (auto r=v.rbegin(); r!=v.rend(); ++r)

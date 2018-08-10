@@ -15,9 +15,4 @@ Issues:
 <li>Division of bigint by bigint isn't fully supported. As of now, bigints can only be divided by numbers small enough to be expressible as long long int. </li>
 </ul>
 
-To-do:
-<ul>
-<li>Rewrite the multiplication function to use the Karatsuba algorithm, which is more efficient than the simple digit-by-digit multiplication algorithm presently used.</li>
-</ul>
-
 Tested in g++ 5.4.0.
