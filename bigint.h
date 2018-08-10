@@ -16,7 +16,8 @@ class bigint
         bigint(unsigned long long);
 
         bigint& negate();    //changes the sign of the number and returns it
-        long long toInt() const;  //converts to long long type if possible, else throws range_error
+        long long toInteger() const;  //converts to long long type if possible, else throws range_error
+        unsigned long long toUnsigned() const;  //ignores the sign and converts if possible, else throws range_error
         string binary() const;    //returns binary form of magnitude of number with a minus sign if number is negative
         int num_digits() const;
         int operator[] (int);   //return digit in given position from left (zero-indexed)
@@ -63,6 +64,7 @@ class bigint
         friend int signum(const bigint&);   //returns 1 if number is positive, -1 if negative, 0 if its 0
         friend bigint abs(const bigint&);          //returns absolute value of number without changing the number
         friend string to_string(const bigint&);
+        friend bigint factorial(const bigint&);
 
         bigint flipbit(int);
         bigint setbit(int);
@@ -86,6 +88,5 @@ istream& operator >> (istream&, bigint&);   //to facilitate reading a bigint var
 
 bigint operator - (const bigint&);
 
-bigint factorial(const bigint&);
 
 #endif // BIGINT_H

@@ -1,6 +1,7 @@
 #include<iostream>
 #include<vector>
 #include<climits>
+#include<cmath>
 using namespace std;
 
 #include "bigint.h"
@@ -182,10 +183,10 @@ bigint& bigint::negate()
     else sign = true;
     return *this;
 }
-long long bigint::toInt() const
+long long bigint::toInteger() const
 {
     if(compare_mag(LLONG_MAX)==1)
-        throw range_error((to_string(*this) + "out of bounds of long long int"));
+        throw range_error((to_string(*this) + " out of bounds of long long int"));
     long long n=0;
     for (int i : v)
     {
@@ -194,6 +195,18 @@ long long bigint::toInt() const
     }
     if(sign==false)
         n=-n;
+    return n;
+}
+unsigned long long bigint::toUnsigned() const
+{
+    if(compare_mag(ULLONG_MAX)==1)
+        throw range_error((to_string(*this) + " out of bounds of unsigned long long int"));
+    unsigned long long n=0;
+    for (int i : v)
+    {
+        n *= 10;
+        n += i;
+    }
     return n;
 }
 
@@ -320,58 +333,6 @@ bigint operator - (const bigint& a, const bigint& b)
     }
 }
 
-
-
-bigint operator * (const bigint& a, const bigint& b)
-{
-    if(a.v.empty() || b.v.empty())
-        throw invalid_argument("multiplication on uninitialised bigints");
-    bigint result = 0;
-    if(a == (bigint)0 || b == (bigint)0)
-        return result;
-    vector <bigint> res(b.v.size());
-    int carry=0;
-    auto p = a.v.end()-1;
-    auto q = b.v.end()-1;
-    int k=0;
-    while(1)
-    {
-        int val = *p * *q + carry;
-        if(val <= 9)
-        {
-            res[k].v.insert(res[k].v.begin(),val);
-            carry=0;
-        }
-        else
-        {
-            carry = val/10;
-            res[k].v.insert(res[k].v.begin(),val%10);
-        }
-        if(p != a.v.begin())
-            p--;
-        else
-        {
-            if(carry)
-            {
-                res[k].v.insert(res[k].v.begin(),carry);
-                carry=0;
-            }
-            if(q != b.v.begin())
-                q--;
-            else
-                break;
-            p=a.v.end()-1;
-            k++;
-            for (int i=0; i<k; i++)
-                res[k].v.insert(res[k].v.begin(),0);
-        }
-    }
-    for (int i=0; i<=k; i++)
-        result = result.add_mag(res[i]);
-    result.sign = (a.sign==b.sign);
-    return result;
-}
-
 bigint& bigint::operator ++ ()  //pre-increment
 {
     return *this = *this+(bigint)1;
@@ -391,6 +352,46 @@ const bigint bigint::operator -- (int)  //post-decrement
     bigint x = *this;
     *this = *this - (bigint)1;
     return x;
+}
+
+constexpr unsigned long long MAX = sqrt(ULLONG_MAX);
+
+bigint operator * (const bigint& A, const bigint& B)
+{
+    //cout<<A<<'*'<<B<<endl;
+    if(A.v.empty() || B.v.empty())
+        throw invalid_argument("multiplication on uninitialised bigints");
+    bigint result;
+    if(A.compare_mag(MAX)==-1 && B.compare_mag(MAX)==-1)
+        result = A.toUnsigned() * B.toUnsigned();
+    else
+    {
+        int i, na=A.v.size(), nb=B.v.size();
+
+        bigint a,b,c,d;
+        if(na==1)
+            a.v.push_back(0);
+        for (i=0; i<na/2; i++)
+            a.v.push_back(A.v[i]);
+        for (; i<na; i++)
+            b.v.push_back(A.v[i]);
+        if(nb==1)
+            c.v.push_back(0);
+        for (i=0; i<nb/2; i++)
+            c.v.push_back(B.v[i]);
+        for (; i<nb; i++)
+            d.v.push_back(B.v[i]);
+        bigint ac = a*c, bd = b*d, ad = a*d, bc = b*c;
+
+        for (i=0; i<(na-na/2+nb-nb/2); i++) ac.v.push_back(0);
+        for (i=0; i<(na-na/2); i++) ad.v.push_back(0);
+        for (i=0; i<(nb-nb/2); i++) bc.v.push_back(0);
+        //cout<<setw(30)<<ac<<endl<<setw(30)<<ad<<endl<<setw(30)<<bc<<endl<<setw(30)<<bd<<endl;
+        result = ac.add_mag(ad).add_mag(bc).add_mag(bd);
+    }
+
+    result.sign = (A.sign==B.sign);
+    return result;
 }
 
 bigint& bigint::operator += (const bigint& that) { return *this = *this + that; }
@@ -424,9 +425,18 @@ istream& operator >> (istream& strm, bigint &b)
 
 int bigint::operator[] (int n)
 {
-    if(n >= v.size() || n<0)
-        throw out_of_range(("index " + to_string(n) + " out of range").c_str());
-    return v[n];
+    if(n>=0)
+    {
+        if(n >= v.size())
+            throw out_of_range(("index " + to_string(n) + " out of range").c_str());
+        return v[n];
+    }
+    else
+    {
+        if(n < -(int)v.size())
+            throw out_of_range(("index " + to_string(n) + " out of range").c_str());
+        return v[v.size()+n];
+    }
 }
 
 int bigint::num_digits() const
@@ -460,13 +470,17 @@ inline bigint abs(const bigint& n)
 
 bigint factorial(const bigint& n)
 {
-    if(signum(n) == -1)
+    if(n.sign == false)
         throw invalid_argument("factorial on negative bigint");
     if(n==(bigint)1 || n==(bigint)0)
         return 1;
     bigint res=2, i=3;
     while(i<=n)
-        res = res*i, i = i+1;
+    {
+        res = res*i;
+        cout<<i<<"! = "<<res<<endl;
+        i=i+1;
+    }
     return res;
 }
 
@@ -508,7 +522,7 @@ long long operator % (const bigint& a, long long b)
     if(b == 0)
         throw invalid_argument("division by 0");
     if(a.compare_mag(b)==-1)
-        return a.toInt();
+        return a.toInteger();
     auto p = a.v.begin();
     long long res, num=0;
     while(num < b)
@@ -527,8 +541,8 @@ long long operator % (const bigint& a, long long b)
     }
     return res;
 }
-bigint operator / (const bigint& a, const bigint& b) { return a/b.toInt(); }
-long long operator % (const bigint& a, const bigint& b) { return a%b.toInt(); }
+bigint operator / (const bigint& a, const bigint& b) { return a/b.toInteger(); }
+long long operator % (const bigint& a, const bigint& b) { return a%b.toInteger(); }
 
 string bigint::binary() const
 {
@@ -909,6 +923,5 @@ bool bigint::testbit(int n)
     if(n>=binary().size() || n<0)
         throw out_of_range(("index " + to_string(n) + " out of range").c_str());
     bigint bin = binary();
-    if(bin.v[n]==1) return true;
-    else return false;
+    return (bin.v[n]==1);
 }
